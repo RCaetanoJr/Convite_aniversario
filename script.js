@@ -2,31 +2,24 @@
  * script.js — Confirmação de presença
  * Aniversário do Iago 3 Anos 🏗️
  *
- * IMPORTANTE: Este projeto é HTML puro (sem Vite/Webpack/bundler).
- * Por isso usamos o Firebase via CDN (gstatic.com), que funciona
- * diretamente no navegador sem precisar de npm install.
- *
- * O "npm install firebase" é para projetos com bundler (React, Vue, etc).
- * Para HTML puro, o CDN é a abordagem correta e oficial do Firebase.
+ * Firebase v12.13.0 via CDN — mesma versão do console do Firebase.
  */
 
 // ============================================================
-// 🔥 IMPORTS DO FIREBASE VIA CDN
-// Versão fixa para garantir estabilidade
+// 🔥 IMPORTS — Firebase v12.13.0 (mesma versão do seu projeto)
 // ============================================================
 import { initializeApp }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
 
 import {
   getFirestore,
   collection,
   addDoc,
   serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/12.13.0/firebase-firestore.js";
 
 // ============================================================
 // 🔥 CONFIGURAÇÃO DO FIREBASE
-// Suas credenciais reais do projeto guerra-faz-3-anos
 // ============================================================
 const firebaseConfig = {
   apiKey:            "AIzaSyBD3ICuxLA2aRYDV-ucWb7eygFef-RYDxo",
@@ -38,17 +31,12 @@ const firebaseConfig = {
   measurementId:     "G-XV9HM3KHDX"
 };
 
-// Inicializa o app Firebase
 const app = initializeApp(firebaseConfig);
-
-// Obtém a instância do Firestore
-const db = getFirestore(app);
-
-// Nome da coleção no Firestore
+const db  = getFirestore(app);
 const COLECAO = "confirmacoes";
 
 // ============================================================
-// SELEÇÃO DE ELEMENTOS DO DOM
+// DOM
 // ============================================================
 const formPresenca       = document.getElementById('form-presenca');
 const inputNome          = document.getElementById('nome-convidado');
@@ -65,21 +53,18 @@ const radiosAcompanhante = document.querySelectorAll('input[name="acompanhante"]
 const btnConfirmar       = document.querySelector('.btn-confirmar');
 
 // ============================================================
-// ESTADO LOCAL
+// ESTADO
 // ============================================================
 let acompanhantesList = [];
 
 // ============================================================
-// FUNÇÕES AUXILIARES
+// AUXILIARES
 // ============================================================
-
-/** Valida nome com pelo menos 2 palavras */
 function validarNomeCompleto(nome) {
   const partes = nome.trim().split(/\s+/);
   return partes.length >= 2 && partes.every(p => p.length >= 1);
 }
 
-/** Exibe ou limpa erro em um span */
 function exibirErro(spanErro, mensagem) {
   if (mensagem) {
     spanErro.textContent = mensagem;
@@ -90,12 +75,10 @@ function exibirErro(spanErro, mensagem) {
   }
 }
 
-/** Marca/desmarca input como inválido */
 function marcarErroInput(input, temErro) {
   input.classList.toggle('erro', temErro);
 }
 
-/** Bloqueia ou libera o botão durante o envio ao Firestore */
 function setCarregando(carregando) {
   btnConfirmar.disabled    = carregando;
   btnConfirmar.textContent = carregando
@@ -104,14 +87,8 @@ function setCarregando(carregando) {
 }
 
 // ============================================================
-// FIREBASE — SALVAR NO FIRESTORE
+// FIREBASE — SALVAR
 // ============================================================
-
-/**
- * Grava a confirmação na coleção "confirmacoes" do Firestore.
- * addDoc() cria um documento com ID gerado automaticamente.
- * serverTimestamp() usa o relógio do servidor Firebase.
- */
 async function salvarNoFirestore(confirmacao) {
   await addDoc(collection(db, COLECAO), {
     nomeConvidado:   confirmacao.nomeConvidado,
@@ -125,7 +102,6 @@ async function salvarNoFirestore(confirmacao) {
 // ============================================================
 // ACOMPANHANTES
 // ============================================================
-
 function renderizarListaAcompanhantes() {
   listaAcompanhantes.innerHTML = '';
   if (acompanhantesList.length === 0) return;
@@ -135,11 +111,10 @@ function renderizarListaAcompanhantes() {
     const spanNome = document.createElement('span');
     const btnRem   = document.createElement('button');
 
-    spanNome.textContent = nome;
-
-    btnRem.type        = 'button';
-    btnRem.className   = 'btn-remover-acompanhante';
-    btnRem.textContent = '🗑️';
+    spanNome.textContent   = nome;
+    btnRem.type            = 'button';
+    btnRem.className       = 'btn-remover-acompanhante';
+    btnRem.textContent     = '🗑️';
     btnRem.setAttribute('aria-label', `Remover ${nome}`);
     btnRem.addEventListener('click', () => removerAcompanhante(index));
 
@@ -151,7 +126,6 @@ function renderizarListaAcompanhantes() {
 
 function adicionarAcompanhante() {
   const nome = inputAcompanhante.value.trim();
-
   if (!nome) {
     exibirErro(erroAcompanhante, '⚠️ Digite o nome do acompanhante.');
     inputAcompanhante.focus();
@@ -163,7 +137,6 @@ function adicionarAcompanhante() {
     inputAcompanhante.focus();
     return;
   }
-
   exibirErro(erroAcompanhante, null);
   marcarErroInput(inputAcompanhante, false);
   acompanhantesList.push(nome);
@@ -178,9 +151,8 @@ function removerAcompanhante(index) {
 }
 
 // ============================================================
-// TOGGLE SIM / NÃO
+// TOGGLE SIM/NÃO
 // ============================================================
-
 function atualizarToggleAcompanhante(valor) {
   if (valor === 'sim') {
     labelSim.classList.add('selecionado');
@@ -201,7 +173,6 @@ function atualizarToggleAcompanhante(valor) {
 // ============================================================
 // VALIDAÇÃO
 // ============================================================
-
 function validarFormulario() {
   let valido = true;
   const nome = inputNome.value.trim();
@@ -235,53 +206,41 @@ function validarFormulario() {
 // ============================================================
 // RESET
 // ============================================================
-
 function resetarFormulario() {
   inputNome.value = '';
   marcarErroInput(inputNome, false);
   exibirErro(erroNome, null);
-
   const radioNao = document.querySelector('input[name="acompanhante"][value="nao"]');
   if (radioNao) radioNao.checked = true;
   atualizarToggleAcompanhante('nao');
-
   inputAcompanhante.value = '';
   exibirErro(erroAcompanhante, null);
   marcarErroInput(inputAcompanhante, false);
 }
 
 // ============================================================
-// EVENT LISTENERS
+// EVENTOS
 // ============================================================
-
 radiosAcompanhante.forEach(r =>
   r.addEventListener('change', e => atualizarToggleAcompanhante(e.target.value))
 );
-
 labelSim.addEventListener('click', () => atualizarToggleAcompanhante('sim'));
 labelNao.addEventListener('click', () => atualizarToggleAcompanhante('nao'));
 btnAddAcompanhante.addEventListener('click', adicionarAcompanhante);
-
 inputAcompanhante.addEventListener('keypress', e => {
   if (e.key === 'Enter') { e.preventDefault(); adicionarAcompanhante(); }
 });
-
 inputNome.addEventListener('input', () => {
-  if (inputNome.value.trim()) {
-    marcarErroInput(inputNome, false);
-    exibirErro(erroNome, null);
-  }
+  if (inputNome.value.trim()) { marcarErroInput(inputNome, false); exibirErro(erroNome, null); }
 });
-
 inputAcompanhante.addEventListener('input', () => {
   marcarErroInput(inputAcompanhante, false);
   exibirErro(erroAcompanhante, null);
 });
 
 // ============================================================
-// SUBMIT — grava no Firestore
+// SUBMIT
 // ============================================================
-
 formPresenca.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -312,17 +271,13 @@ formPresenca.addEventListener('submit', async (e) => {
     setTimeout(() => msgSucesso.classList.remove('visivel'), 6000);
 
   } catch (erro) {
-    // ❌ Erro — mostra detalhes no console para depuração
-    console.error('Código do erro Firebase:', erro.code);
-    console.error('Mensagem:', erro.message);
+    console.error('Erro Firebase:', erro.code, erro.message);
 
-    // Mensagens amigáveis por tipo de erro
     let msgErro = '❌ Erro ao confirmar presença. Tente novamente.';
-    if (erro.code === 'permission-denied') {
-      msgErro = '❌ Permissão negada pelo banco de dados. Verifique as regras do Firestore.';
-    } else if (erro.code === 'unavailable') {
+    if (erro.code === 'permission-denied')
+      msgErro = '❌ Permissão negada. Verifique as Regras do Firestore no console do Firebase.';
+    else if (erro.code === 'unavailable')
       msgErro = '❌ Sem conexão com o servidor. Verifique sua internet.';
-    }
 
     alert(msgErro);
   } finally {
