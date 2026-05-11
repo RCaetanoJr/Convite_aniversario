@@ -1,169 +1,143 @@
 /**
- * painel.js — Lógica do Painel Administrativo
+ * painel.js — Painel Administrativo
  * Aniversário do Iago 3 Anos 🏗️
  *
- * Responsabilidades deste arquivo:
- *  - Ler as confirmações salvas no LocalStorage pelo script.js
- *  - Calcular e exibir os totalizadores (cards de resumo)
- *  - Renderizar a tabela de confirmações
- *  - Implementar busca por nome (filtro em tempo real)
- *  - Excluir uma confirmação individual
- *  - Limpar todos os dados (com confirmação)
- *  - Exportar a lista para CSV
+ * ── MIGRAÇÃO: LocalStorage → Firebase Firestore ──
+ * O painel agora lê os dados diretamente do Firestore.
+ * Usa onSnapshot() para atualização em TEMPO REAL:
+ * toda vez que alguém confirma presença, o painel
+ * atualiza automaticamente sem precisar recarregar a página.
  *
- * NOTA: Este arquivo e o script.js compartilham a mesma chave do LocalStorage.
- * Para migrar para API/banco de dados no futuro, substituir as funções
- * obterConfirmacoes() e salvarConfirmacoes() por chamadas fetch/axios.
+ * Coleção: "confirmacoes"
  */
 
 // ============================================================
-// CONSTANTES E CONFIGURAÇÃO
+// 🔥 CONFIGURAÇÃO DO FIREBASE
+// ──────────────────────────────────────────────────────────
+// ⚠️ USE AS MESMAS CREDENCIAIS DO script.js
 // ============================================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  onSnapshot,
+  deleteDoc,
+  doc,
+  getDocs,
+  writeBatch,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 /**
- * Chave do LocalStorage — deve ser idêntica à usada em script.js.
- * Centralizada aqui para facilitar manutenção e evitar bugs de tipagem.
- * @constant {string}
+ * ⚠️ SUBSTITUA PELOS SEUS DADOS DO FIREBASE CONSOLE
+ * Deve ser idêntico ao firebaseConfig em script.js
  */
-const CHAVE_STORAGE = 'confirmacoes_iago';
+const firebaseConfig = {
+  apiKey: "AIzaSyBD3ICuxLA2aRYDV-ucWb7eygFef-RYDxo",
+  authDomain: "guerra-faz-3-anos.firebaseapp.com",
+  projectId: "guerra-faz-3-anos",
+  storageBucket: "guerra-faz-3-anos.firebasestorage.app",
+  messagingSenderId: "232913922587",
+  appId: "1:232913922587:web:231f4e02916a7dbc5a26be",
+  measurementId: "G-XV9HM3KHDX"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+/** Nome da coleção — deve ser igual ao script.js */
+const COLECAO = "confirmacoes";
 
 // ============================================================
 // SELEÇÃO DE ELEMENTOS DO DOM
 // ============================================================
 
-/** Cards de totalizadores */
 const elTotalConfirmacoes  = document.getElementById('total-confirmacoes');
 const elTotalPrincipais    = document.getElementById('total-principais');
 const elTotalAcompanhantes = document.getElementById('total-acompanhantes');
 const elTotalPessoas       = document.getElementById('total-pessoas');
-
-/** Input de busca por nome */
-const inputBusca = document.getElementById('input-busca');
-
-/** Corpo da tabela onde as linhas são inseridas */
-const tabelaBody = document.getElementById('tabela-body');
-
-/** Wrapper da tabela (para mostrar/ocultar) */
-const tabelaWrapper = document.getElementById('tabela-wrapper');
-
-/** Div de estado vazio */
-const estadoVazio = document.getElementById('estado-vazio');
-
-/** Botões de ação */
-const btnExportar   = document.getElementById('btn-exportar');
-const btnLimparTudo = document.getElementById('btn-limpar-tudo');
+const inputBusca           = document.getElementById('input-busca');
+const tabelaBody           = document.getElementById('tabela-body');
+const tabelaWrapper        = document.getElementById('tabela-wrapper');
+const estadoVazio          = document.getElementById('estado-vazio');
+const btnExportar          = document.getElementById('btn-exportar');
+const btnLimparTudo        = document.getElementById('btn-limpar-tudo');
 
 // ============================================================
-// FUNÇÕES DO LOCALSTORAGE
+// CACHE LOCAL — dados recebidos do Firestore
+// Mantido em memória para permitir busca e exportação
+// sem fazer novas leituras desnecessárias no banco.
 // ============================================================
 
 /**
- * Recupera todas as confirmações do LocalStorage.
- * Retorna array vazio se não houver dados ou em caso de erro.
- * @returns {Array<Object>} Lista de confirmações
+ * Array com todas as confirmações recebidas do Firestore.
+ * Cada item inclui o campo `_id` com o ID do documento,
+ * necessário para operações de exclusão.
+ * @type {Array<Object>}
  */
-function obterConfirmacoes() {
-  try {
-    const dados = localStorage.getItem(CHAVE_STORAGE);
-    return dados ? JSON.parse(dados) : [];
-  } catch (e) {
-    console.error('Erro ao ler confirmações do LocalStorage:', e);
-    return [];
-  }
-}
-
-/**
- * Salva o array completo de confirmações no LocalStorage.
- * Substitua esta função por uma chamada API no futuro.
- * @param {Array<Object>} confirmacoes
- */
-function salvarConfirmacoes(confirmacoes) {
-  try {
-    localStorage.setItem(CHAVE_STORAGE, JSON.stringify(confirmacoes));
-  } catch (e) {
-    console.error('Erro ao salvar no LocalStorage:', e);
-    alert('Erro ao salvar dados. Verifique o armazenamento do navegador.');
-  }
-}
-
-// ============================================================
-// CÁLCULO DOS TOTALIZADORES
-// ============================================================
-
-/**
- * Calcula e atualiza os cards de resumo no topo do painel.
- * Recebe o array completo de confirmações (não filtrado).
- * @param {Array<Object>} confirmacoes
- */
-function atualizarResumo(confirmacoes) {
-  // Total de confirmações = número de grupos (entradas no array)
-  const totalConfirmacoes = confirmacoes.length;
-
-  // Total de convidados principais = sempre igual ao total de confirmações
-  // (cada confirmação tem exatamente 1 convidado principal)
-  const totalPrincipais = confirmacoes.length;
-
-  // Total de acompanhantes = soma do length de cada array de acompanhantes
-  const totalAcompanhantes = confirmacoes.reduce((soma, c) => {
-    return soma + (c.acompanhantes ? c.acompanhantes.length : 0);
-  }, 0);
-
-  // Total geral = soma de totalPessoas de cada confirmação
-  const totalPessoas = confirmacoes.reduce((soma, c) => {
-    return soma + (c.totalPessoas || 1);
-  }, 0);
-
-  // Atualiza os elementos do DOM com animação de contagem simples
-  animarNumero(elTotalConfirmacoes, totalConfirmacoes);
-  animarNumero(elTotalPrincipais, totalPrincipais);
-  animarNumero(elTotalAcompanhantes, totalAcompanhantes);
-  animarNumero(elTotalPessoas, totalPessoas);
-}
-
-/**
- * Anima a contagem de um número do 0 até o valor final.
- * Usado nos cards de resumo para dar vida ao painel.
- * @param {HTMLElement} elemento - Elemento que exibe o número
- * @param {number} valorFinal
- */
-function animarNumero(elemento, valorFinal) {
-  const duracao = 600; // ms
-  const inicio  = Date.now();
-  const valorInicial = parseInt(elemento.textContent) || 0;
-
-  function passo() {
-    const progresso = Math.min((Date.now() - inicio) / duracao, 1);
-    const valorAtual = Math.floor(valorInicial + (valorFinal - valorInicial) * progresso);
-    elemento.textContent = valorAtual;
-    if (progresso < 1) requestAnimationFrame(passo);
-  }
-
-  requestAnimationFrame(passo);
-}
+let cacheConfirmacoes = [];
 
 // ============================================================
 // FORMATAÇÃO DE DATA/HORA
 // ============================================================
 
 /**
- * Formata uma string ISO de data para exibição amigável em pt-BR.
- * Ex: "2026-07-26T16:00:00.000Z" → "26/07/2026 13:00"
- * @param {string} isoString - Data no formato ISO 8601
- * @returns {string} Data formatada
+ * Converte um Timestamp do Firestore para string legível em pt-BR.
+ * O Firestore retorna objetos Timestamp com método .toDate().
+ * @param {import("firebase/firestore").Timestamp|null} timestamp
+ * @returns {string}
  */
-function formatarDataHora(isoString) {
+function formatarDataHora(timestamp) {
+  if (!timestamp) return '—';
   try {
-    const data = new Date(isoString);
+    // .toDate() converte Timestamp do Firestore para Date nativo
+    const data = timestamp.toDate();
     return data.toLocaleString('pt-BR', {
-      day:    '2-digit',
-      month:  '2-digit',
-      year:   'numeric',
-      hour:   '2-digit',
-      minute: '2-digit'
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
   } catch (e) {
-    return isoString || '—';
+    return '—';
   }
+}
+
+// ============================================================
+// TOTALIZADORES
+// ============================================================
+
+/**
+ * Calcula e anima os cards de resumo.
+ * Sempre usa o array completo (sem filtro de busca).
+ * @param {Array<Object>} confirmacoes
+ */
+function atualizarResumo(confirmacoes) {
+  const totalConfirmacoes  = confirmacoes.length;
+  const totalPrincipais    = confirmacoes.length;
+  const totalAcompanhantes = confirmacoes.reduce((s, c) => s + (c.acompanhantes?.length || 0), 0);
+  const totalPessoas       = confirmacoes.reduce((s, c) => s + (c.totalPessoas || 1), 0);
+
+  animarNumero(elTotalConfirmacoes,  totalConfirmacoes);
+  animarNumero(elTotalPrincipais,    totalPrincipais);
+  animarNumero(elTotalAcompanhantes, totalAcompanhantes);
+  animarNumero(elTotalPessoas,       totalPessoas);
+}
+
+/**
+ * Anima contagem de 0 até o valor final num elemento.
+ * @param {HTMLElement} el
+ * @param {number} valorFinal
+ */
+function animarNumero(el, valorFinal) {
+  const duracao = 500;
+  const inicio  = Date.now();
+  const de      = parseInt(el.textContent) || 0;
+  const tick    = () => {
+    const p = Math.min((Date.now() - inicio) / duracao, 1);
+    el.textContent = Math.floor(de + (valorFinal - de) * p);
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
 // ============================================================
@@ -171,162 +145,170 @@ function formatarDataHora(isoString) {
 // ============================================================
 
 /**
- * Renderiza as linhas da tabela com base no array de confirmações.
- * Chamada na inicialização e toda vez que os dados mudam.
- * @param {Array<Object>} confirmacoes - Dados a exibir (pode ser filtrado)
+ * Renderiza a tabela com o array de confirmações recebido.
+ * Pode ser o array completo ou filtrado pela busca.
+ * @param {Array<Object>} confirmacoes
  */
 function renderizarTabela(confirmacoes) {
-  // Limpa o corpo da tabela antes de renderizar
   tabelaBody.innerHTML = '';
 
-  // --- Estado vazio ---
   if (confirmacoes.length === 0) {
-    // Oculta tabela e mostra mensagem de estado vazio
     tabelaWrapper.style.display = 'none';
-    estadoVazio.style.display = 'block';
+    estadoVazio.style.display   = 'block';
     return;
   }
 
-  // Dados existentes: mostra tabela e oculta estado vazio
   tabelaWrapper.style.display = 'block';
-  estadoVazio.style.display = 'none';
+  estadoVazio.style.display   = 'none';
 
-  // Cria uma linha (<tr>) para cada confirmação
-  confirmacoes.forEach((confirmacao, index) => {
-
+  confirmacoes.forEach((c, index) => {
     const tr = document.createElement('tr');
 
-    // Coluna 1: Número sequencial (#)
-    const tdNumero = document.createElement('td');
-    tdNumero.textContent = index + 1;
-    tr.appendChild(tdNumero);
+    // # número sequencial
+    const tdNum = document.createElement('td');
+    tdNum.textContent = index + 1;
+    tr.appendChild(tdNum);
 
-    // Coluna 2: Nome do convidado principal
+    // Nome do convidado principal
     const tdNome = document.createElement('td');
-    tdNome.textContent = confirmacao.nomeConvidado || '—';
+    tdNome.textContent   = c.nomeConvidado || '—';
     tdNome.style.fontWeight = '700';
     tr.appendChild(tdNome);
 
-    // Coluna 3: Lista de acompanhantes
+    // Lista de acompanhantes
     const tdAcomp = document.createElement('td');
-    if (confirmacao.acompanhantes && confirmacao.acompanhantes.length > 0) {
-      // Cria uma lista com os nomes dos acompanhantes
+    if (c.acompanhantes?.length > 0) {
       const ul = document.createElement('ul');
       ul.className = 'lista-acomp-tabela';
-      confirmacao.acompanhantes.forEach(nome => {
+      c.acompanhantes.forEach(nome => {
         const li = document.createElement('li');
         li.textContent = nome;
         ul.appendChild(li);
       });
       tdAcomp.appendChild(ul);
     } else {
-      // Exibe traço quando não há acompanhantes
-      tdAcomp.textContent = '—';
-      tdAcomp.style.color = 'var(--cinza-medio)';
+      tdAcomp.textContent      = '—';
+      tdAcomp.style.color      = 'var(--cinza-medio)';
     }
     tr.appendChild(tdAcomp);
 
-    // Coluna 4: Quantidade de acompanhantes
-    const tdQtdAcomp = document.createElement('td');
-    tdQtdAcomp.textContent = confirmacao.acompanhantes ? confirmacao.acompanhantes.length : 0;
-    tdQtdAcomp.style.textAlign = 'center';
-    tdQtdAcomp.style.fontWeight = '700';
-    tr.appendChild(tdQtdAcomp);
+    // Quantidade de acompanhantes
+    const tdQtd = document.createElement('td');
+    tdQtd.textContent       = c.acompanhantes?.length || 0;
+    tdQtd.style.textAlign   = 'center';
+    tdQtd.style.fontWeight  = '700';
+    tr.appendChild(tdQtd);
 
-    // Coluna 5: Total de pessoas no grupo (destaque laranja)
+    // Total de pessoas (destaque laranja)
     const tdTotal = document.createElement('td');
-    tdTotal.className = 'td-total';
-    tdTotal.textContent = confirmacao.totalPessoas || 1;
+    tdTotal.className   = 'td-total';
+    tdTotal.textContent = c.totalPessoas || 1;
     tr.appendChild(tdTotal);
 
-    // Coluna 6: Data/hora da confirmação
+    // Data/hora (vem do Timestamp do Firestore)
     const tdData = document.createElement('td');
-    tdData.textContent = formatarDataHora(confirmacao.dataHora);
-    tdData.style.fontSize = '0.8rem';
-    tdData.style.color = 'var(--cinza-escuro)';
-    tdData.style.whiteSpace = 'nowrap';
+    tdData.textContent       = formatarDataHora(c.dataHora);
+    tdData.style.fontSize    = '0.8rem';
+    tdData.style.color       = 'var(--cinza-escuro)';
+    tdData.style.whiteSpace  = 'nowrap';
     tr.appendChild(tdData);
 
-    // Coluna 7: Botão de excluir esta confirmação
-    const tdAcao = document.createElement('td');
+    // Botão excluir
+    const tdAcao    = document.createElement('td');
     tdAcao.style.textAlign = 'center';
-
     const btnExcluir = document.createElement('button');
-    btnExcluir.className = 'btn-excluir-linha';
+    btnExcluir.className   = 'btn-excluir-linha';
     btnExcluir.textContent = '🗑️ Excluir';
-    btnExcluir.setAttribute('aria-label', `Excluir confirmação de ${confirmacao.nomeConvidado}`);
-
-    // Ao clicar em excluir, chama a função com o ID desta confirmação
-    btnExcluir.addEventListener('click', () => {
-      excluirConfirmacao(confirmacao.id);
-    });
-
+    btnExcluir.setAttribute('aria-label', `Excluir confirmação de ${c.nomeConvidado}`);
+    // c._id é o ID do documento no Firestore
+    btnExcluir.addEventListener('click', () => excluirConfirmacao(c._id, c.nomeConvidado));
     tdAcao.appendChild(btnExcluir);
     tr.appendChild(tdAcao);
 
-    // Adiciona a linha ao corpo da tabela
     tabelaBody.appendChild(tr);
   });
 }
 
 // ============================================================
-// FUNÇÃO PRINCIPAL: renderizar painel completo
+// RENDER PRINCIPAL (aplica filtro de busca)
 // ============================================================
 
 /**
- * Função principal chamada para (re)renderizar todo o painel.
- * Lê os dados, aplica filtro de busca, atualiza resumo e tabela.
- * @param {string} [termoBusca=''] - Texto para filtrar por nome
+ * Re-renderiza a tabela aplicando filtro de busca se houver.
+ * Sempre atualiza o resumo com os dados completos do cache.
+ * @param {string} [termoBusca='']
  */
 function renderizarPainel(termoBusca = '') {
-  // Obtém todas as confirmações do LocalStorage
-  const todasConfirmacoes = obterConfirmacoes();
+  atualizarResumo(cacheConfirmacoes);
 
-  // Sempre calcula o resumo com os dados completos (sem filtro)
-  atualizarResumo(todasConfirmacoes);
-
-  // Aplica filtro de busca se houver termo digitado
-  let confirmacoesFiltradas = todasConfirmacoes;
-
+  let filtradas = cacheConfirmacoes;
   if (termoBusca.trim()) {
-    const termo = termoBusca.trim().toLowerCase();
-
-    // Filtra confirmações onde o nome do convidado ou dos acompanhantes contém o termo
-    confirmacoesFiltradas = todasConfirmacoes.filter(c => {
-      const nomeConvidado = (c.nomeConvidado || '').toLowerCase();
-      const nomesAcomp    = (c.acompanhantes || []).join(' ').toLowerCase();
-      return nomeConvidado.includes(termo) || nomesAcomp.includes(termo);
-    });
+    const t = termoBusca.trim().toLowerCase();
+    filtradas = cacheConfirmacoes.filter(c =>
+      (c.nomeConvidado || '').toLowerCase().includes(t) ||
+      (c.acompanhantes || []).join(' ').toLowerCase().includes(t)
+    );
   }
 
-  // Renderiza a tabela com os dados filtrados
-  renderizarTabela(confirmacoesFiltradas);
+  renderizarTabela(filtradas);
 }
+
+// ============================================================
+// 🔥 LISTENER EM TEMPO REAL — onSnapshot
+// ============================================================
+
+/**
+ * onSnapshot() abre uma conexão persistente com o Firestore.
+ * Toda vez que um documento é adicionado, alterado ou removido
+ * na coleção "confirmacoes", esta função é chamada automaticamente.
+ *
+ * Isso significa que o painel atualiza INSTANTANEAMENTE
+ * quando alguém confirma presença — sem precisar recarregar.
+ */
+const consultaOrdenada = query(
+  collection(db, COLECAO),
+  orderBy("dataHora", "asc") // ordena por data de confirmação (mais antigas primeiro)
+);
+
+onSnapshot(consultaOrdenada, (snapshot) => {
+  // Monta o array local com os dados + o ID de cada documento
+  cacheConfirmacoes = snapshot.docs.map(docSnap => ({
+    _id: docSnap.id,       // ID único do documento no Firestore
+    ...docSnap.data()      // todos os campos: nomeConvidado, acompanhantes, etc.
+  }));
+
+  // Re-renderiza mantendo o filtro de busca ativo (se houver)
+  renderizarPainel(inputBusca.value);
+
+}, (erro) => {
+  // Erro de conexão ou permissão
+  console.error('Erro ao ouvir o Firestore:', erro);
+  estadoVazio.style.display = 'block';
+  estadoVazio.querySelector('p').textContent =
+    '❌ Erro ao carregar dados. Verifique sua conexão.';
+});
 
 // ============================================================
 // EXCLUIR UMA CONFIRMAÇÃO
 // ============================================================
 
 /**
- * Exclui uma confirmação específica pelo seu ID.
- * Pede confirmação antes de excluir (segurança).
- * @param {string} id - ID da confirmação a excluir
+ * Exclui um documento do Firestore pelo ID.
+ * O onSnapshot() detecta a remoção e atualiza a tabela automaticamente.
+ * @param {string} id - ID do documento no Firestore
+ * @param {string} nome - Nome do convidado (para exibir na confirmação)
  */
-function excluirConfirmacao(id) {
-  // Confirmação via dialog nativo do navegador
-  const confirmar = window.confirm('Deseja excluir esta confirmação? Esta ação não pode ser desfeita.');
+async function excluirConfirmacao(id, nome) {
+  if (!confirm(`Deseja excluir a confirmação de "${nome}"?\nEsta ação não pode ser desfeita.`)) return;
 
-  if (!confirmar) return;
-
-  // Filtra o array removendo o item com o ID correspondente
-  const confirmacoes = obterConfirmacoes();
-  const novasConfirmacoes = confirmacoes.filter(c => c.id !== id);
-
-  // Salva o array atualizado
-  salvarConfirmacoes(novasConfirmacoes);
-
-  // Re-renderiza o painel com os dados atualizados
-  renderizarPainel(inputBusca.value);
+  try {
+    // doc(db, COLECAO, id) → referência ao documento específico
+    await deleteDoc(doc(db, COLECAO, id));
+    // O onSnapshot() vai detectar a exclusão e atualizar a tabela automaticamente
+  } catch (e) {
+    console.error('Erro ao excluir:', e);
+    alert('❌ Erro ao excluir. Verifique sua conexão.');
+  }
 }
 
 // ============================================================
@@ -334,85 +316,72 @@ function excluirConfirmacao(id) {
 // ============================================================
 
 /**
- * Remove todas as confirmações do LocalStorage.
- * Solicita confirmação dupla para evitar acidentes.
+ * Remove TODOS os documentos da coleção usando writeBatch().
+ * writeBatch() é mais eficiente que múltiplos deleteDoc()
+ * porque agrupa todas as exclusões em uma única operação.
  */
-function limparTodosDados() {
-  // Primeira confirmação
-  const primeiraConfirmacao = window.confirm(
-    '⚠️ Tem certeza que deseja apagar TODAS as confirmações?\n\nEsta ação não pode ser desfeita!'
-  );
+async function limparTodosDados() {
+  if (!confirm('⚠️ Tem certeza que deseja apagar TODAS as confirmações?\nEsta ação não pode ser desfeita!')) return;
+  if (!confirm('🔴 ÚLTIMA CHANCE: Confirma a exclusão de TODOS os dados?')) return;
 
-  if (!primeiraConfirmacao) return;
+  try {
+    // Busca todos os documentos da coleção
+    const snapshot = await getDocs(collection(db, COLECAO));
 
-  // Segunda confirmação (extra de segurança)
-  const segundaConfirmacao = window.confirm(
-    '🔴 ÚLTIMA CHANCE: Confirma a exclusão de TODOS os dados?'
-  );
+    if (snapshot.empty) {
+      alert('Não há confirmações para excluir.');
+      return;
+    }
 
-  if (!segundaConfirmacao) return;
+    // writeBatch: agrupa até 500 operações numa transação
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit(); // executa todas as exclusões de uma vez
 
-  // Remove a chave do LocalStorage
-  localStorage.removeItem(CHAVE_STORAGE);
+    // O onSnapshot() vai detectar e esvaziar a tabela automaticamente
 
-  // Re-renderiza o painel (ficará vazio)
-  renderizarPainel();
+  } catch (e) {
+    console.error('Erro ao limpar dados:', e);
+    alert('❌ Erro ao limpar dados. Verifique sua conexão.');
+  }
 }
 
 // ============================================================
-// EXPORTAR PARA CSV
+// EXPORTAR CSV
 // ============================================================
 
 /**
- * Exporta todas as confirmações para um arquivo CSV.
- * CSV (Comma-Separated Values) pode ser aberto no Excel, Google Sheets, etc.
- * O arquivo é gerado no lado do cliente e baixado via link temporário.
+ * Exporta os dados do cache local para um arquivo CSV.
+ * Usa o cacheConfirmacoes para não precisar de nova leitura.
  */
 function exportarCSV() {
-  const confirmacoes = obterConfirmacoes();
-
-  if (confirmacoes.length === 0) {
+  if (cacheConfirmacoes.length === 0) {
     alert('Não há confirmações para exportar.');
     return;
   }
 
-  // --- Monta o conteúdo do CSV ---
-
-  // Cabeçalho das colunas (BOM UTF-8 para compatibilidade com Excel)
-  const bom = '\uFEFF'; // Byte Order Mark — necessário para acentos no Excel
+  const bom = '\uFEFF'; // BOM UTF-8 para compatibilidade com Excel
   let csv = bom + 'Nº;Convidado Principal;Acompanhantes;Qtd. Acompanhantes;Total Pessoas;Data/Hora\n';
 
-  // Uma linha por confirmação
-  confirmacoes.forEach((c, index) => {
-    // Junta os nomes dos acompanhantes com " | " como separador dentro da célula
-    const acompanhantesStr = c.acompanhantes && c.acompanhantes.length > 0
+  cacheConfirmacoes.forEach((c, i) => {
+    const acompStr = c.acompanhantes?.length > 0
       ? c.acompanhantes.join(' | ')
       : 'Nenhum';
 
-    // Escapa aspas duplas para não quebrar o CSV
     const nome     = `"${(c.nomeConvidado || '').replace(/"/g, '""')}"`;
-    const acomp    = `"${acompanhantesStr.replace(/"/g, '""')}"`;
+    const acomp    = `"${acompStr.replace(/"/g, '""')}"`;
     const dataHora = `"${formatarDataHora(c.dataHora)}"`;
 
-    csv += `${index + 1};${nome};${acomp};${c.acompanhantes ? c.acompanhantes.length : 0};${c.totalPessoas || 1};${dataHora}\n`;
+    csv += `${i + 1};${nome};${acomp};${c.acompanhantes?.length || 0};${c.totalPessoas || 1};${dataHora}\n`;
   });
 
-  // --- Cria e dispara o download ---
-
-  // Cria um Blob com o conteúdo CSV e tipo MIME correto
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-
-  // Cria um URL temporário para o Blob
-  const url = URL.createObjectURL(blob);
-
-  // Cria um link invisível e simula o clique para baixar
+  const url  = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href     = url;
   link.download = `presencas-iago-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
   document.body.appendChild(link);
   link.click();
-
-  // Remove o link e libera o URL após o download
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
@@ -421,43 +390,8 @@ function exportarCSV() {
 // EVENT LISTENERS
 // ============================================================
 
-/**
- * Filtro de busca em tempo real.
- * A cada tecla digitada, re-renderiza a tabela filtrada.
- */
-inputBusca.addEventListener('input', () => {
-  renderizarPainel(inputBusca.value);
-});
+// Busca em tempo real — filtra o cache sem nova leitura no banco
+inputBusca.addEventListener('input', () => renderizarPainel(inputBusca.value));
 
-/**
- * Botão de exportar CSV.
- */
-btnExportar.addEventListener('click', exportarCSV);
-
-/**
- * Botão de limpar todos os dados.
- */
+btnExportar.addEventListener('click',   exportarCSV);
 btnLimparTudo.addEventListener('click', limparTodosDados);
-
-// ============================================================
-// INICIALIZAÇÃO — executa ao carregar a página
-// ============================================================
-
-/**
- * Inicializa o painel renderizando os dados existentes.
- * Chamada automaticamente quando o script é carregado.
- */
-renderizarPainel();
-
-/**
- * Atualiza o painel automaticamente a cada 30 segundos.
- * Útil quando múltiplas pessoas confirmam presença e o
- * administrador está com o painel aberto.
- * (No futuro, substituir por WebSocket ou Server-Sent Events)
- */
-setInterval(() => {
-  // Só atualiza se não houver termo de busca ativo
-  if (!inputBusca.value.trim()) {
-    renderizarPainel();
-  }
-}, 30000);
