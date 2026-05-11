@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏗️ Painel de Presença — Aniversário do Iago</title>
+
+  <!-- Folha de estilos compartilhada (inclui estilos do painel) -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ==========================================
+       FAIXA ZEBRADA TOPO
+       ========================================== -->
+  <div class="zebra-top" aria-hidden="true"></div>
+
+  <!-- ==========================================
+       CABEÇALHO DO PAINEL
+       ========================================== -->
+  <header class="painel-header">
+    <p class="painel-titulo">⚙️ Painel de Presença</p>
+    <p class="painel-sub">Aniversário do Iago — 3 Anos • 26/07/2026</p>
+  </header>
+
+  <!-- ==========================================
+       CONTEÚDO DO PAINEL
+       ========================================== -->
+  <main class="painel-container">
+
+    <!-- ------------------------------------------
+         CARDS DE RESUMO (totalizadores)
+         ------------------------------------------ -->
+    <section aria-labelledby="titulo-resumo">
+      <h2 class="card-title" id="titulo-resumo" style="margin-bottom:16px;">
+        <span class="icon">📊</span> Resumo Geral
+      </h2>
+
+      <!-- Grid com 4 cards de métricas -->
+      <div class="resumo-grid" id="resumo-grid">
+
+        <!-- Card: Total de confirmações (grupos) -->
+        <div class="resumo-card">
+          <span class="resumo-icone">📋</span>
+          <div class="resumo-numero" id="total-confirmacoes">0</div>
+          <div class="resumo-label">Confirmações</div>
+        </div>
+
+        <!-- Card: Total de convidados principais -->
+        <div class="resumo-card">
+          <span class="resumo-icone">👤</span>
+          <div class="resumo-numero" id="total-principais">0</div>
+          <div class="resumo-label">Convidados</div>
+        </div>
+
+        <!-- Card: Total de acompanhantes -->
+        <div class="resumo-card">
+          <span class="resumo-icone">👥</span>
+          <div class="resumo-numero" id="total-acompanhantes">0</div>
+          <div class="resumo-label">Acompanhantes</div>
+        </div>
+
+        <!-- Card: Total geral de pessoas -->
+        <div class="resumo-card">
+          <span class="resumo-icone">🏗️</span>
+          <div class="resumo-numero" id="total-pessoas">0</div>
+          <div class="resumo-label">Total Pessoas</div>
+        </div>
+
+      </div><!-- /resumo-grid -->
+    </section>
+
+    <!-- ------------------------------------------
+         BARRA DE AÇÕES
+         ------------------------------------------ -->
+    <div class="painel-acoes" role="toolbar" aria-label="Ações do painel">
+
+      <!-- Campo de busca por nome -->
+      <input
+        type="text"
+        id="input-busca"
+        placeholder="🔍 Buscar por nome..."
+        aria-label="Buscar confirmação por nome"
+      />
+
+      <!-- Botão exportar CSV -->
+      <button
+        class="btn-secundario"
+        id="btn-exportar"
+        aria-label="Exportar lista para CSV"
+      >
+        📥 Exportar CSV
+      </button>
+
+      <!-- Botão limpar todos os dados -->
+      <button
+        class="btn-perigo"
+        id="btn-limpar-tudo"
+        aria-label="Limpar todas as confirmações"
+      >
+        🗑️ Limpar Tudo
+      </button>
+
+    </div><!-- /painel-acoes -->
+
+    <!-- ------------------------------------------
+         ESTADO VAZIO (quando não há confirmações)
+         Exibido/ocultado via JS
+         ------------------------------------------ -->
+    <div id="estado-vazio" role="status" aria-live="polite">
+      <span class="vazio-icone">🏗️</span>
+      <p>Nenhuma confirmação de presença ainda.</p>
+      <p style="font-size:0.85rem; margin-top:6px; opacity:0.7;">
+        Divulgue o link da página de confirmação!
+      </p>
+    </div>
+
+    <!-- ------------------------------------------
+         TABELA DE CONFIRMAÇÕES
+         ------------------------------------------ -->
+    <div class="tabela-wrapper" id="tabela-wrapper">
+      <table id="tabela-confirmacoes" aria-label="Lista de confirmações de presença">
+
+        <!-- Cabeçalho da tabela -->
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Convidado Principal</th>
+            <th scope="col">Acompanhantes</th>
+            <th scope="col" style="text-align:center;">Qtd. Acomp.</th>
+            <th scope="col" style="text-align:center;">Total</th>
+            <th scope="col">Data/Hora</th>
+            <th scope="col" style="text-align:center;">Ação</th>
+          </tr>
+        </thead>
+
+        <!-- Corpo da tabela — preenchido dinamicamente pelo JS -->
+        <tbody id="tabela-body">
+          <!-- As linhas são inseridas via painel.js -->
+        </tbody>
+
+      </table>
+    </div><!-- /tabela-wrapper -->
+
+    <!-- Link de volta para a página pública -->
+    <p style="text-align:center; margin-top:28px; margin-bottom:8px; font-size:0.82rem; font-weight:700; color: var(--cinza-escuro);">
+      🎂 <a href="index.html" style="color: var(--laranja);">Voltar para a página de confirmação</a>
+    </p>
+
+  </main><!-- /painel-container -->
+
+  <!-- ==========================================
+       FAIXA ZEBRADA RODAPÉ
+       ========================================== -->
+  <div class="zebra-bottom" aria-hidden="true"></div>
+
+  <!-- ==========================================
+       RODAPÉ
+       ========================================== -->
+  <footer class="site-footer">
+    <p>⚙️ Painel Administrativo — Aniversário do Iago 3 Anos</p>
+  </footer>
+
+  <!-- Script do painel administrativo -->
+  <script src="painel.js"></script>
+
+</body>
+</html>

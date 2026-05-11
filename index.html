@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏗️ Aniversário do Iago - 3 Anos! Confirme sua Presença</title>
+  <meta property="og:title" content="🏗️ Aniversário do Iago - 3 Anos!" />
+  <meta property="og:description" content="Vamos construir um dia de alegria! Confirme sua presença no aniversário do Iago." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════════════════════════╗
+     ║        TELA DE CARREGAMENTO (LOADING SCREEN)        ║
+     ╚══════════════════════════════════════════════════════╝ -->
+<div id="loading-screen" aria-hidden="true">
+  <div class="loading-bg"></div>
+  <div class="loading-centro">
+    <div class="loading-zebra-top"></div>
+    <div class="loading-cena">
+
+      <!-- Placa de obra suspensa com correntes -->
+      <div class="placa-wrapper">
+        <div class="correntes">
+          <div class="corrente corrente-esq"></div>
+          <div class="corrente corrente-dir"></div>
+        </div>
+        <div class="placa-obra">
+          <div class="placa-parafusos">
+            <span class="parafuso"></span><span class="parafuso"></span>
+          </div>
+          <div class="placa-conteudo">
+            <p class="placa-atencao">⚠️ ATENÇÃO, EQUIPE!</p>
+            <p class="placa-texto">Carregando a festa...</p>
+          </div>
+          <div class="placa-parafusos placa-parafusos-baixo">
+            <span class="parafuso"></span><span class="parafuso"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nome com animação letra por letra -->
+      <div class="loading-nome">
+        <span class="letra" style="--d:0.0s">I</span>
+        <span class="letra" style="--d:0.15s">A</span>
+        <span class="letra" style="--d:0.30s">G</span>
+        <span class="letra" style="--d:0.45s">O</span>
+      </div>
+      <div class="loading-badge">🎂 3 ANOS!</div>
+
+      <!-- Cena SVG animada do canteiro de obras -->
+      <div class="canteiro-svg-wrapper">
+        <svg class="canteiro-svg" viewBox="0 0 360 120" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="95" width="360" height="25" fill="#c8a96a"/>
+          <rect x="0" y="98" width="360" height="4" fill="#b8995a"/>
+          <g class="escavadeira">
+            <rect x="18" y="82" width="62" height="14" rx="7" fill="#333"/>
+            <circle cx="25" cy="89" r="6" fill="#555"/>
+            <circle cx="74" cy="89" r="6" fill="#555"/>
+            <rect x="20" y="60" width="58" height="26" rx="5" fill="#FFC107"/>
+            <rect x="34" y="48" width="34" height="20" rx="4" fill="#FF6A00"/>
+            <rect x="38" y="52" width="14" height="11" rx="3" fill="#87ceeb" opacity="0.9"/>
+            <g class="braco-escavadeira">
+              <rect x="72" y="52" width="38" height="8" rx="4" fill="#FFC107" transform="rotate(-20,72,56)"/>
+              <rect x="100" y="44" width="30" height="7" rx="3" fill="#E0A800" transform="rotate(15,100,47)"/>
+              <polygon points="122,62 138,62 135,78 125,78" fill="#333" transform="rotate(5,130,70)"/>
+            </g>
+            <rect x="62" y="43" width="5" height="10" rx="2" fill="#555"/>
+          </g>
+          <circle class="fumaca f1" cx="64" cy="35" r="5" fill="rgba(180,180,180,0.6)"/>
+          <circle class="fumaca f2" cx="68" cy="25" r="7" fill="rgba(180,180,180,0.45)"/>
+          <circle class="fumaca f3" cx="62" cy="16" r="9" fill="rgba(180,180,180,0.25)"/>
+          <rect x="160" y="76" width="16" height="8" rx="1" fill="#c0392b"/>
+          <rect x="158" y="68" width="16" height="8" rx="1" fill="#e74c3c"/>
+          <rect x="160" y="60" width="16" height="8" rx="1" fill="#c0392b"/>
+          <polygon points="200,95 208,95 205,72" fill="#FF6A00"/>
+          <rect x="197" y="95" width="14" height="3" rx="1" fill="#FFF"/>
+          <rect x="200" y="81" width="8" height="2" fill="#FFF" opacity="0.7"/>
+          <polygon points="230,95 238,95 235,75" fill="#FF6A00"/>
+          <rect x="227" y="95" width="14" height="3" rx="1" fill="#FFF"/>
+          <rect x="230" y="83" width="8" height="2" fill="#FFF" opacity="0.7"/>
+          <ellipse cx="285" cy="90" rx="18" ry="10" fill="#FFC107"/>
+          <ellipse cx="285" cy="85" rx="16" ry="12" fill="#FFC107"/>
+          <rect x="270" y="89" width="30" height="4" rx="2" fill="#E0A800"/>
+          <rect x="300" y="65" width="50" height="28" rx="4" fill="#FFC107" stroke="#111" stroke-width="2"/>
+          <rect x="322" y="93" width="6" height="6" rx="1" fill="#555"/>
+          <text x="325" y="73" text-anchor="middle" font-family="Arial" font-weight="700" font-size="6" fill="#111">⚠️ EM</text>
+          <text x="325" y="83" text-anchor="middle" font-family="Arial Black" font-weight="900" font-size="8" fill="#111">OBRAS</text>
+        </svg>
+      </div>
+
+      <!-- Barra de progresso -->
+      <div class="loading-progresso-wrap">
+        <div class="loading-progresso-label">Construindo a festa... <span id="loading-pct">0</span>%</div>
+        <div class="loading-barra-bg">
+          <div class="loading-barra-fill" id="loading-barra"></div>
+        </div>
+      </div>
+
+    </div><!-- /loading-cena -->
+    <div class="loading-zebra-bot"></div>
+  </div>
+</div><!-- /loading-screen -->
+
+
+<!-- ╔══════════════════════════════════════════════════════╗
+     ║               CONTEÚDO PRINCIPAL                    ║
+     ╚══════════════════════════════════════════════════════╝ -->
+<div id="site-content" class="site-oculto">
+
+  <div class="zebra-top" aria-hidden="true"></div>
+
+  <!-- ══ CABEÇALHO ══ -->
+  <header class="site-header">
+    <span class="header-emoji" aria-hidden="true">⛑️</span>
+    <p class="header-sub">⚠️ Atenção, Equipe! ⚠️</p>
+    <p class="header-slogan">Vamos construir um dia de alegria!</p>
+    <span class="header-titulo">IAGO</span>
+    <div><span class="header-badge">🎂 3 ANOS!</span></div>
+  </header>
+
+  <main class="container">
+
+    <!-- ── CARD: DADOS DO EVENTO ── -->
+    <section class="card" aria-labelledby="titulo-evento">
+      <h2 class="card-title" id="titulo-evento">
+        <span class="icon">📋</span> Dados da Obra
+      </h2>
+      <div class="obra-divider" aria-hidden="true"><span>🏗️</span></div>
+      <div class="evento-grid">
+        <div class="evento-item">
+          <span class="label">📅 Data</span>
+          <span class="valor">26/07/2026</span>
+        </div>
+        <div class="evento-item">
+          <span class="label">⏰ Horário</span>
+          <span class="valor">16:00h</span>
+        </div>
+        <div class="evento-item full">
+          <span class="label">📍 Local</span>
+          <span class="valor">Salão Estação Piuí</span>
+        </div>
+        <div class="evento-item full">
+          <span class="label">🗺️ Endereço</span>
+          <span class="valor" style="color:var(--cinza-escuro);font-size:0.9rem;">
+            Rua Pernambuco, 2800, Ipiranga – Divinópolis/MG
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CARD: MAPA ── -->
+    <section class="card card-mapa" aria-labelledby="titulo-mapa">
+      <h2 class="card-title" id="titulo-mapa">
+        <span class="icon">📍</span> Localização
+      </h2>
+      <div class="obra-divider" aria-hidden="true"><span>🗺️</span></div>
+      <div class="mapa-wrapper">
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3745.8488050541614!2d-44.9112158!3d-20.140354399999996!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xa0a5ec204571bb%3A0x768337c5bba4e3df!2zRXN0YcOnw6NvIFBpdWkgRmVzdGFz!5e0!3m2!1spt-BR!2sbr!4v1778517370807!5m2!1spt-BR!2sbr"
+          title="Localização do Salão Estação Piuí"
+          allowfullscreen=""
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+        ></iframe>
+      </div>
+      <a
+        href="https://maps.google.com/?q=Estação+Piuí+Festas,+Rua+Pernambuco+2800,+Ipiranga,+Divinópolis+MG"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-mapa-externo"
+      >
+        🗺️ Abrir no Google Maps
+      </a>
+    </section>
+
+    <!-- ── MENSAGEM DE SUCESSO ── -->
+    <div id="msg-sucesso" role="alert" aria-live="polite">
+      <span class="sucesso-icone">🎉</span>
+      <h3>Presença Confirmada!</h3>
+      <p>Agora você faz parte da equipe do Iago!<br>Nos vemos em obra! 🏗️</p>
+    </div>
+
+    <!-- ── CARD: FORMULÁRIO ── -->
+    <section class="card" aria-labelledby="titulo-form">
+      <h2 class="card-title" id="titulo-form">
+        <span class="icon">✅</span> Confirmar Presença
+      </h2>
+      <div class="obra-divider" aria-hidden="true"><span>👷</span></div>
+
+      <form id="form-presenca" novalidate>
+        <div class="form-group">
+          <label for="nome-convidado">Nome Completo *</label>
+          <input
+            type="text" id="nome-convidado" name="nome"
+            placeholder="Ex: João da Silva" autocomplete="name"
+            aria-required="true" aria-describedby="erro-nome"
+          />
+          <span class="msg-erro" id="erro-nome" role="alert"></span>
+        </div>
+
+        <div class="form-group">
+          <label>Você terá acompanhante?</label>
+          <div class="radio-group" id="grupo-radio-acomp" role="radiogroup" aria-label="Terá acompanhante?">
+            <label class="radio-opcao selecionado" id="label-nao">
+              <input type="radio" name="acompanhante" value="nao" checked aria-label="Não"/>
+              ❌ Não
+            </label>
+            <label class="radio-opcao" id="label-sim">
+              <input type="radio" name="acompanhante" value="sim" aria-label="Sim"/>
+              👥 Sim
+            </label>
+          </div>
+        </div>
+
+        <div id="area-acompanhantes" aria-hidden="true">
+          <ul id="lista-acompanhantes" aria-label="Lista de acompanhantes"></ul>
+          <span class="msg-erro" id="erro-acompanhante" role="alert" style="margin-bottom:8px;"></span>
+          <div class="acomp-input-row">
+            <input type="text" id="input-acompanhante" placeholder="Nome completo do acompanhante" aria-label="Nome do acompanhante"/>
+            <button type="button" class="btn-primario" id="btn-add-acompanhante">➕ Adicionar</button>
+          </div>
+        </div>
+
+        <div style="margin-top:22px;">
+          <button type="submit" class="btn-confirmar">🏗️ Confirmar Presença</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ── LINK PAINEL: OCULTO DO PÚBLICO ──
+         Para acessar o painel, abrir painel.html diretamente.
+         O link não é exibido na página pública. -->
+
+  </main>
+
+  <div class="zebra-bottom" aria-hidden="true"></div>
+
+  <footer class="site-footer">
+    <p>🏗️ Aniversário do Iago • 3 Anos • 26/07/2026 🎂</p>
+    <p style="margin-top:4px;font-size:0.75rem;">Salão Estação Piuí — Divinópolis/MG</p>
+  </footer>
+
+</div><!-- /site-content -->
+
+<script src="script.js"></script>
+
+<script>
+/**
+ * LOADING SCREEN CONTROLLER
+ * Simula barra de progresso "construindo" e revela o site.
+ */
+(function() {
+  const loadingScreen = document.getElementById('loading-screen');
+  const siteContent   = document.getElementById('site-content');
+  const barra         = document.getElementById('loading-barra');
+  const pctEl         = document.getElementById('loading-pct');
+
+  let progresso = 0;
+  const DURACAO  = 3200; // ms total
+  const TICK     = 40;   // ms por tick
+  const BASE_INC = 100 / (DURACAO / TICK);
+
+  const timer = setInterval(() => {
+    const fator = progresso < 70 ? 1.5 : progresso < 90 ? 0.7 : 0.25;
+    progresso = Math.min(progresso + BASE_INC * fator, 100);
+
+    barra.style.width  = progresso + '%';
+    pctEl.textContent  = Math.floor(progresso);
+
+    if (progresso >= 100) {
+      clearInterval(timer);
+      pctEl.textContent = '100';
+      setTimeout(() => {
+        loadingScreen.classList.add('loading-saindo');
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+          siteContent.classList.remove('site-oculto');
+          siteContent.classList.add('site-entrando');
+        }, 600);
+      }, 400);
+    }
+  }, TICK);
+})();
+</script>
+
+</body>
+</html>
